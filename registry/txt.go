@@ -54,10 +54,10 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 	if len(txtEncryptAESKey) == 0 {
 		txtEncryptAESKey = nil
 	} else if len(txtEncryptAESKey) != 32 {
-		return nil, errors.New("The AES Encryption key must have a length of 32 bytes")
+		return nil, errors.New("the AES Encryption key must have a length of 32 bytes")
 	}
 	if txtEncryptEnabled && txtEncryptAESKey == nil {
-		return nil, errors.New("The AES Encryption key must be set when TXT record encryption is enabled")
+		return nil, errors.New("the AES Encryption key must be set when TXT record encryption is enabled")
 	}
 
 	if len(txtPrefix) > 0 && len(txtSuffix) > 0 {

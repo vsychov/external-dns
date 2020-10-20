@@ -109,7 +109,7 @@ func DecryptText(text string, aesKey []byte) (string, error) {
 		return text, err
 	}
 	if len(data) <= nonceSize {
-		return text, fmt.Errorf("The encoded data from text %#v is shorter than %#v bytes and can't be decoded", text, nonceSize)
+		return text, fmt.Errorf("the encoded data from text %#v is shorter than %#v bytes and can't be decoded", text, nonceSize)
 	}
 	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
 	plaindata, err := gcm.Open(nil, nonce, ciphertext, nil)
