@@ -34,18 +34,18 @@ func TestEncrypt(t *testing.T) {
 		t.Errorf("Original plain text %#v differs from the resulting decrypted text %#v", plaintext, decryptedtext)
 	}
 
-	// Verify that decrypt returns an error and unmodified data if wrong AES encryption key is used
+	// Verify that decrypt returns an error and empty data if wrong AES encryption key is used
 	decryptedtext, err = DecryptText(encryptedtext, []byte("s'J!jD`].LC?g&Oa11AgTub,j48ts/96"))
 	require.Error(t, err)
-	if decryptedtext != encryptedtext {
-		t.Error("Data decryption failed, but decrypt still didn't return the original input")
+	if decryptedtext != "" {
+		t.Error("Data decryption failed, empty string should be as result")
 	}
 
-	// Verify that decrypt returns an error and unmodified data if unencrypted input is is supplied
+	// Verify that decrypt returns an error and empty data if unencrypted input is is supplied
 	decryptedtext, err = DecryptText(plaintext, aesKey)
 	require.Error(t, err)
-	if plaintext != decryptedtext {
-		t.Errorf("Data decryption failed, but decrypt still didn't return the original input. Original input %#v, returned data %#v", plaintext, decryptedtext)
+	if decryptedtext != "" {
+		t.Errorf("Data decryption failed, empty string should be as result")
 	}
 
 	// Verify that a known encrypted text is decrypted to what is expected
