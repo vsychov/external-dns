@@ -30,21 +30,30 @@ import (
 )
 
 // EncryptText gzip input data and encrypts it using the supplied AES key
-func EncryptText(text string, aesKey []byte) (string, error) {
-	block, _ := aes.NewCipher(aesKey)
+func EncryptText(text string, aesKey []byte, nonceEncoded []byte) (string, error) {
+	block, err := aes.NewCipher(aesKey)
+	if err != nil {
+		return "", err
+	}
+
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
 		return "", err
 	}
+
 	nonce := make([]byte, gcm.NonceSize())
-	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
-		return "", err
+	if nonceEncoded == nil {
+		if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
+			return "", err
+		}
+	} else {
+		if _, err = base64.StdEncoding.Decode(nonce, nonceEncoded); err != nil {
+			return "", err
+		}
 	}
 
-	data := []byte(text)
-	data, err = compressData(data)
+	data, err := compressData([]byte(text))
 	if err != nil {
-		log.Debugf("Failed to compress data based on the text %#v. Got error %#v.", text, err)
 		return "", err
 	}
 
@@ -54,38 +63,38 @@ func EncryptText(text string, aesKey []byte) (string, error) {
 
 // DecryptText decrypt gziped data using a supplied AES encryption key ang ungzip it
 // in case of decryption failed, will return original input and decryption error
-func DecryptText(text string, aesKey []byte) (string, error) {
+func DecryptText(text string, aesKey []byte) (decryptResult string, encryptNonce string, err error) {
 	block, err := aes.NewCipher(aesKey)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	nonceSize := gcm.NonceSize()
 	data, err := base64.StdEncoding.DecodeString(text)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	if len(data) <= nonceSize {
-		return "", fmt.Errorf("the encoded data from text %#v is shorter than %#v bytes and can't be decoded", text, nonceSize)
+		return "", "", fmt.Errorf("the encoded data from text %#v is shorter than %#v bytes and can't be decoded", text, nonceSize)
 	}
 	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
 	plaindata, err := gcm.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	plaindata, err = decompressData(plaindata)
 	if err != nil {
 		log.Debugf("Failed to decompress data based on the base64 encoded text %#v. Got error %#v.", text, err)
-		return "", err
+		return "", "", err
 	}
 
-	return string(plaindata), nil
+	return string(plaindata), base64.StdEncoding.EncodeToString(nonce), nil
 }
 
-// Decompress gzip compressed data
+// decompressData gzip compressed data
 func decompressData(data []byte) (resData []byte, err error) {
 	gz, err := gzip.NewReader(bytes.NewBuffer(data))
 	if err != nil {
@@ -100,7 +109,7 @@ func decompressData(data []byte) (resData []byte, err error) {
 	return b.Bytes(), nil
 }
 
-// Compress data by gzip, for minify data stored in registry
+// compressData by gzip, for minify data stored in registry
 func compressData(data []byte) (compressedData []byte, err error) {
 	var b bytes.Buffer
 	gz, err := gzip.NewWriterLevel(&b, gzip.BestCompression)
