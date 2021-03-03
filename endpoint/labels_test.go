@@ -72,6 +72,13 @@ func (suite *LabelsSuite) TestSerialize() {
 	suite.NotEqual(suite.fooAsTextWithQuotes, suite.foo.Serialize(true, true, suite.aesKey), "should serializeLabel and encrypt")
 }
 
+func (suite *LabelsSuite) TestEncryptionNonceReUsage() {
+	foo, err := NewLabelsFromString(suite.fooAsTextEncrypted, suite.aesKey)
+	suite.NoError(err, "should succeed for valid label text")
+	serialized := foo.Serialize(false, true, suite.aesKey)
+	suite.Equal(serialized, suite.fooAsTextEncrypted, "serialized result should be equal")
+}
+
 func (suite *LabelsSuite) TestDeserialize() {
 	foo, err := NewLabelsFromStringPlain(suite.fooAsText)
 	suite.NoError(err, "should succeed for valid label text")
@@ -83,11 +90,15 @@ func (suite *LabelsSuite) TestDeserialize() {
 
 	foo, err = NewLabelsFromString(suite.fooAsTextEncrypted, suite.aesKey)
 	suite.NoError(err, "should succeed for valid encrypted label text")
-	suite.Equal(suite.foo, foo, "should reconstruct original label map")
+	for key, val := range suite.foo {
+		suite.Equal(val, foo[key], "should contains all keys from original label map")
+	}
 
 	foo, err = NewLabelsFromString(suite.fooAsTextWithQuotesEncrypted, suite.aesKey)
 	suite.NoError(err, "should succeed for valid encrypted label text")
-	suite.Equal(suite.foo, foo, "should reconstruct original label map")
+	for key, val := range suite.foo {
+		suite.Equal(val, foo[key], "should contains all keys from original label map")
+	}
 
 	bar, err := NewLabelsFromStringPlain(suite.barText)
 	suite.NoError(err, "should succeed for valid label text")
